@@ -8,6 +8,7 @@ export function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+/** Returns an UNESCAPED string; callers must escapeHtml() before HTML insertion. */
 export function formatSource(hit: PhraseHit): string {
   const authors = hit.creators.length
     ? hit.creators[0] + (hit.creators.length > 1 ? " et al." : "")
@@ -27,7 +28,6 @@ export function renderHits(hits: PhraseHit[]): string {
     .map((h, i) => {
       const snippet = escapeHtml(h.snippet);
       const source = escapeHtml(formatSource(h));
-      const copyPayload = escapeHtml(h.snippet);
       const key = escapeHtml(h.key);
       return `
     <div class="hit">
@@ -38,7 +38,7 @@ export function renderHits(hits: PhraseHit[]): string {
       <blockquote class="snippet">${snippet}</blockquote>
       <div class="source">${source}</div>
       <div class="actions">
-        <button class="copy-btn" data-copy="${copyPayload}">复制</button>
+        <button class="copy-btn" data-copy="${snippet}">复制</button>
         <button class="jump-btn" data-key="${key}">跳 Zotero</button>
       </div>
     </div>`;
