@@ -24,6 +24,8 @@ export function renderHits(hits: PhraseHit[]): string {
   if (hits.length === 0) {
     return `<div class="empty">没有找到相近表达。换个说法,或先运行 <code>zsearch sync</code>。</div>`;
   }
+  // No (key, chunk_idx) dedup needed: the vector store keys each chunk uniquely
+  // and query_chunks returns each chunk at most once. Revisit if chunking changes.
   return hits
     .map((h, i) => {
       const snippet = escapeHtml(h.snippet);
