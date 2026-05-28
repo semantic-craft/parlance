@@ -22,3 +22,5 @@ export interface CommandResult {
 }
 
 export type CommandRunner = (cmd: string, args: string[]) => Promise<CommandResult>;
+
+export type ErrorKind = "not-installed" | "no-api-key" | "no-index" | "empty-selection" | "unknown";

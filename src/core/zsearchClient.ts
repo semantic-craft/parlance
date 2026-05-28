@@ -1,8 +1,8 @@
 import { execFile } from "node:child_process";
-import type { CommandResult, CommandRunner, ParlanceConfig, PhraseHit } from "./types";
+import type { CommandResult, CommandRunner, ErrorKind, ParlanceConfig, PhraseHit } from "./types";
 
 export class ZsearchClientError extends Error {
-  constructor(public kind: string, message: string) {
+  constructor(public kind: ErrorKind, message: string) {
     super(message);
     this.name = "ZsearchClientError";
   }
@@ -15,6 +15,8 @@ export const defaultRunner: CommandRunner = (cmd, args) =>
         resolve({ stdout: "", stderr: "ENOENT", code: 127 });
         return;
       }
+      // Node puts string error codes (e.g. "ENOENT", handled above) in err.code;
+      // a numeric code here is a real process exit status.
       const errno = err as (NodeJS.ErrnoException & { code?: number }) | null;
       const code = errno && typeof errno.code === "number" ? errno.code : err ? 1 : 0;
       resolve({ stdout: stdout ?? "", stderr: stderr ?? "", code });
@@ -23,7 +25,7 @@ export const defaultRunner: CommandRunner = (cmd, args) =>
 
 export function classifyError(stderr: string): ZsearchClientError {
   const s = stderr.toLowerCase();
-  if (s.includes("enoent") || s.includes("command not found") || s.includes("no such file")) {
+  if (s.includes("enoent") || s.includes("command not found")) {
     return new ZsearchClientError(
       "not-installed",
       "未找到 zsearch,请先安装 zotero-cli-agent,或在设置 parlance.zsearchPath 填写绝对路径。",
@@ -59,6 +61,9 @@ export async function findPhrases(
   try {
     parsed = JSON.parse(result.stdout);
   } catch {
+    if (result.stderr.trim()) {
+      throw classifyError(result.stderr);
+    }
     throw new ZsearchClientError("unknown", "zsearch 返回的不是有效 JSON。");
   }
   if (!Array.isArray(parsed)) {
