@@ -45,4 +45,10 @@ describe("renderHits", () => {
     expect(html).toContain("0.234");
     expect((html.match(/class="hit"/g) || []).length).toBe(2);
   });
+
+  it("escapes double-quotes in snippet for attribute context", () => {
+    const html = renderHits([{ ...base, snippet: 'say "hello"' }]);
+    expect(html).toContain('data-copy="say &quot;hello&quot;"');
+    expect(html).not.toContain('data-copy="say "hello""');
+  });
 });
