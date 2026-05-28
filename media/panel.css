@@ -1,0 +1,19 @@
+:root {
+  --pl-bg: var(--vscode-sideBar-background, #1e1e2e);
+  --pl-fg: var(--vscode-foreground, #cdd6f4);
+  --pl-muted: var(--vscode-descriptionForeground, #a6adc8);
+  --pl-accent: var(--vscode-textLink-foreground, #89b4fa);
+  --pl-border: var(--vscode-panel-border, #313244);
+}
+body { font-family: var(--vscode-font-family); color: var(--pl-fg); background: var(--pl-bg); padding: 8px; }
+.empty { color: var(--pl-muted); padding: 16px 8px; line-height: 1.6; }
+.hit { border: 1px solid var(--pl-border); border-radius: 6px; padding: 10px; margin-bottom: 10px; }
+.hit-head { display: flex; justify-content: space-between; font-size: 11px; color: var(--pl-muted); margin-bottom: 6px; }
+.rank { font-weight: 600; }
+.snippet { margin: 0 0 8px; padding: 0 0 0 10px; border-left: 3px solid var(--pl-accent); white-space: pre-wrap; line-height: 1.6; max-height: 9.6em; overflow: auto; }
+.source { color: var(--pl-muted); font-size: 12px; margin-bottom: 8px; }
+.actions { display: flex; gap: 8px; }
+button { background: transparent; color: var(--pl-accent); border: 1px solid var(--pl-border); border-radius: 4px; padding: 2px 10px; cursor: pointer; font-size: 12px; }
+button:hover { background: var(--vscode-toolbar-hoverBackground, #313244); }
+.loading { color: var(--pl-muted); padding: 16px 8px; }
+.error { color: var(--vscode-errorForeground, #f38ba8); padding: 16px 8px; line-height: 1.6; }
