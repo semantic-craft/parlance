@@ -40,6 +40,7 @@ export function classifyError(stderr: string): ZsearchClientError {
   if (s.includes("no such table") || s.includes("vectors.sqlite") || s.includes("index is empty")) {
     return new ZsearchClientError("no-index", "向量库为空或未建,请先运行 `zsearch sync`。");
   }
+  // Raw stderr is surfaced to the user; the webview renders error text via textContent (not innerHTML).
   return new ZsearchClientError("unknown", stderr.trim() || "zsearch 执行失败。");
 }
 
