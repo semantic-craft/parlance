@@ -1,0 +1,59 @@
+{
+  "name": "parlance",
+  "displayName": "Parlance",
+  "description": "Find how scholars phrased it — semantic phrasing search over your Zotero full-text via zsearch.",
+  "version": "0.0.1",
+  "publisher": "xwzhangSZU",
+  "engines": { "vscode": "^1.90.0" },
+  "categories": ["Other"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "parlance.findSimilarPhrasing", "title": "Parlance: 查找相近表达" }
+    ],
+    "menus": {
+      "editor/context": [
+        { "command": "parlance.findSimilarPhrasing", "when": "editorHasSelection", "group": "navigation@9" }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        { "id": "parlance", "title": "Parlance", "icon": "media/icon.svg" }
+      ]
+    },
+    "views": {
+      "parlance": [
+        { "id": "parlance.results", "type": "webview", "name": "相近表达" }
+      ]
+    },
+    "configuration": {
+      "title": "Parlance",
+      "properties": {
+        "parlance.zsearchPath": {
+          "type": "string",
+          "default": "zsearch",
+          "description": "zsearch 可执行路径(若不在 PATH,填 venv 内绝对路径)"
+        },
+        "parlance.topK": {
+          "type": "number",
+          "default": 10,
+          "description": "召回的相近表达条数"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "watch": "npm run build -- --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "vscode:prepublish": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/vscode": "^1.90.0",
+    "esbuild": "^0.21.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}
