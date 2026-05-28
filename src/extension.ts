@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { PanelProvider } from "./providers/panelProvider";
 import { readConfig } from "./core/config";
-import { findPhrases, ZsearchClientError } from "./core/zsearchClient";
+import { findPhrases } from "./core/zsearchClient";
 
 export function activate(context: vscode.ExtensionContext): void {
   const provider = new PanelProvider(context.extensionUri);
@@ -22,7 +22,7 @@ export function activate(context: vscode.ExtensionContext): void {
         const hits = await findPhrases(selection, readConfig());
         provider.showResults(hits);
       } catch (e) {
-        const message = e instanceof ZsearchClientError ? e.message : String(e);
+        const message = e instanceof Error ? e.message : String(e);
         provider.showError(message);
       }
     }),
