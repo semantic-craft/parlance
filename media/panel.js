@@ -9,7 +9,10 @@
     } else if (msg.type === "results") {
       root.innerHTML = msg.html;
     } else if (msg.type === "error") {
-      root.innerHTML = '<div class="error">' + msg.message + "</div>";
+      const d = document.createElement("div");
+      d.className = "error";
+      d.textContent = msg.message;
+      root.replaceChildren(d);
     }
   });
 
