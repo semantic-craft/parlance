@@ -57,10 +57,17 @@ describe("findPhrases", () => {
     await expect(findPhrases("x", { zsearchPath: "zsearch", topK: 10 }, run))
       .rejects.toMatchObject({ kind: "unknown" });
   });
+
+  it("returns an empty array when zsearch finds no hits", async () => {
+    const run = runnerReturning({ stdout: "[]", code: 0 });
+    expect(await findPhrases("x", { zsearchPath: "zsearch", topK: 10 }, run)).toEqual([]);
+  });
 });
 
 describe("classifyError", () => {
-  it("returns a ZsearchClientError", () => {
-    expect(classifyError("command not found")).toBeInstanceOf(ZsearchClientError);
+  it("returns a ZsearchClientError with the right kind", () => {
+    const e = classifyError("command not found");
+    expect(e).toBeInstanceOf(ZsearchClientError);
+    expect(e.kind).toBe("not-installed");
   });
 });
