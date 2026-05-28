@@ -37,7 +37,7 @@ export function classifyError(stderr: string): ZsearchClientError {
       "zsearch 缺少嵌入 API key(如 GEMINI_API_KEY)。请在 VS Code 能读到的环境里设置后重试。",
     );
   }
-  if (s.includes("no such table") || s.includes("vectors.sqlite") || s.includes("index is empty")) {
+  if (s.includes("no such table") || s.includes("vectors.sqlite")) {
     return new ZsearchClientError("no-index", "向量库为空或未建,请先运行 `zsearch sync`。");
   }
   // Raw stderr is surfaced to the user; the webview renders error text via textContent (not innerHTML).
