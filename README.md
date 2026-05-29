@@ -25,7 +25,7 @@ This is a thin front-end over a local setup; it is most useful if you already ru
 | --- | --- | --- |
 | `parlance.zsearchPath` | `zsearch` | Path to the `zsearch` executable |
 | `parlance.topK` | `10` | Number of passages to retrieve |
-| `parlance.suggestModel` | `gemini-2.5-flash` | Gemini model for suggestions (e.g. `gemini-3.5-flash`, `gemini-2.5-pro`) |
+| `parlance.suggestModel` | `gemini-3.5-flash` | Gemini model for suggestions; fall back to `gemini-2.5-flash` if 3.5 is busy (503) |
 | `parlance.suggestMaxPassages` | `6` | Max retrieved passages fed to the model |
 
 ## Privacy & grounding

@@ -12,7 +12,7 @@ export function readConfig(): ParlanceConfig {
 export function readSuggestConfig(): SuggestConfig {
   const c = vscode.workspace.getConfiguration("parlance");
   return {
-    model: c.get<string>("suggestModel", "gemini-2.5-flash"),
+    model: c.get<string>("suggestModel", "gemini-3.5-flash"),
     maxPassages: c.get<number>("suggestMaxPassages", 6),
     apiKey: process.env.GEMINI_API_KEY,
   };
