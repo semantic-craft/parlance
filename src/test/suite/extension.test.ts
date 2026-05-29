@@ -138,3 +138,42 @@ describe("Parlance suggestions golden path — requires GEMINI_API_KEY", () => {
     }
   });
 });
+
+describe("Parlance Qwen fallback golden path — requires DASHSCOPE_API_KEY", () => {
+  it("falls back to Qwen when the Gemini model is unavailable", async function () {
+    if (!process.env.DASHSCOPE_API_KEY || !process.env.GEMINI_API_KEY) {
+      console.log("[skip] need both GEMINI_API_KEY + DASHSCOPE_API_KEY — skipping Qwen fallback path");
+      this.skip();
+    }
+    this.timeout(120000);
+
+    const api = await getApi();
+    const cfg = vscode.workspace.getConfiguration("parlance");
+    await cfg.update("zsearchPath", undefined, vscode.ConfigurationTarget.Global);
+    await cfg.update("topK", 5, vscode.ConfigurationTarget.Global);
+    // Force the Gemini primary to fail (nonexistent model) so the Qwen fallback runs.
+    await cfg.update("suggestModel", "gemini-nonexistent-model-xyz", vscode.ConfigurationTarget.Global);
+    await cfg.update("fallbackModel", "qwen-plus", vscode.ConfigurationTarget.Global);
+    try {
+      await selectAll(SAMPLE);
+      await vscode.commands.executeCommand("parlance.findSimilarPhrasing");
+      assert.strictEqual(api.getLastState()?.kind, "results", "search produced results");
+
+      await vscode.commands.executeCommand("parlance.generateSuggestions");
+      const start = Date.now();
+      while (Date.now() - start < 90000) {
+        const cur = api.getLastSuggestionState();
+        if (cur && cur.kind !== "loading") break;
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      const st = api.getLastSuggestionState();
+      assert.ok(st, "suggestion state set");
+      assert.strictEqual(st.kind, "suggestions", `expected suggestions via Qwen fallback, got ${st.kind}: ${st.message ?? ""}`);
+      assert.ok((st.count ?? 0) >= 1, "at least one rewrite from the Qwen fallback");
+    } finally {
+      await cfg.update("suggestModel", undefined, vscode.ConfigurationTarget.Global);
+      await cfg.update("fallbackModel", undefined, vscode.ConfigurationTarget.Global);
+      await cfg.update("topK", undefined, vscode.ConfigurationTarget.Global);
+    }
+  });
+});

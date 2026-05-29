@@ -11,6 +11,7 @@ This is a thin front-end over a local setup; it is most useful if you already ru
 - **`zsearch`** (from zotero-cli-agent) on your `PATH`, or set `parlance.zsearchPath` to its absolute path.
 - A **populated vector index** over your Zotero full-text (`zsearch sync`).
 - **`GEMINI_API_KEY`** available in the VS Code process environment — used for retrieval embeddings and, optionally, for rewrite suggestions. (Launch VS Code from a shell where this variable is set.)
+- *(Optional)* **`DASHSCOPE_API_KEY`** — if set, rewrite suggestions automatically fall back to Qwen (Alibaba DashScope) whenever Gemini is unavailable (e.g. 503 high-demand).
 
 ## Usage
 
@@ -25,12 +26,14 @@ This is a thin front-end over a local setup; it is most useful if you already ru
 | --- | --- | --- |
 | `parlance.zsearchPath` | `zsearch` | Path to the `zsearch` executable |
 | `parlance.topK` | `10` | Number of passages to retrieve |
-| `parlance.suggestModel` | `gemini-3.5-flash` | Gemini model for suggestions; fall back to `gemini-2.5-flash` if 3.5 is busy (503) |
+| `parlance.suggestModel` | `gemini-3.5-flash` | Primary Gemini model for suggestions |
 | `parlance.suggestMaxPassages` | `6` | Max retrieved passages fed to the model |
+| `parlance.fallbackModel` | `qwen-plus` | Qwen model (DashScope) used when Gemini fails; needs `DASHSCOPE_API_KEY` |
+| `parlance.fallbackBaseUrl` | DashScope endpoint | OpenAI-compatible base URL for the Qwen fallback |
 
 ## Privacy & grounding
 
-Rewrite suggestions are generated **only** from the passages already retrieved from your own library; the model is instructed not to invent sources, statute numbers, authors, or facts. Transient model errors (e.g. 503) are retried with backoff. Your draft text is never modified by the extension — suggestions are copy-only.
+Rewrite suggestions are generated **only** from the passages already retrieved from your own library; the model is instructed not to invent sources, statute numbers, authors, or facts. Transient model errors (e.g. 503) are retried with backoff, and if Gemini stays unavailable the request automatically falls back to Qwen (when `DASHSCOPE_API_KEY` is set). Your draft text is never modified by the extension — suggestions are copy-only.
 
 ## License
 

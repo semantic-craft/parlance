@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import { buildPrompt, generateSuggestions, isTransientGeminiError, SuggestError, withRetry } from "./suggestClient";
-import type { GeminiGenerator, PhraseHit, Suggestion } from "./types";
+import type { Generator, PhraseHit, Suggestion } from "./types";
 
 const HITS: PhraseHit[] = [
   { key: "A", chunk_idx: 0, distance: 0.1, snippet: "学者甲的段落", title: "论甲", creators: ["甲, A"], date: "2020", venue: "X", doi: null },
@@ -12,9 +12,16 @@ const GOOD: Suggestion = {
   rewrites: [{ text: "改写一", basis: "段落1" }],
   phrasings: [{ text: "措辞一", source: "甲(2020)" }],
 };
-const CFG = { model: "gemini-2.5-flash", maxPassages: 6, apiKey: "k" };
+const CFG = {
+  model: "gemini-2.5-flash",
+  maxPassages: 6,
+  apiKey: "k",
+  fallbackModel: "qwen-plus",
+  fallbackApiKey: undefined,
+  fallbackBaseUrl: "https://dash/v1",
+};
 
-const genReturning = (s: string): GeminiGenerator => async () => s;
+const genReturning = (s: string): Generator => async () => s;
 
 describe("generateSuggestions", () => {
   it("rejects empty hits as no-hits", async () => {
@@ -43,18 +50,18 @@ describe("generateSuggestions", () => {
   });
 
   it("classifies a generator throw as network", async () => {
-    const gen: GeminiGenerator = async () => { throw new Error("boom"); };
+    const gen: Generator = async () => { throw new Error("boom"); };
     await expect(generateSuggestions("x", HITS, CFG, gen)).rejects.toMatchObject({ kind: "network" });
   });
 
   it("classifies an auth failure from the generator as no-api-key", async () => {
-    const gen: GeminiGenerator = async () => { throw { status: 403, message: "permission denied" }; };
+    const gen: Generator = async () => { throw { status: 403, message: "permission denied" }; };
     await expect(generateSuggestions("x", HITS, CFG, gen)).rejects.toMatchObject({ kind: "no-api-key" });
   });
 
   it("feeds the sentence and the passages into the prompt", async () => {
     let seen = "";
-    const gen: GeminiGenerator = async (req) => { seen = req.prompt; return JSON.stringify(GOOD); };
+    const gen: Generator = async (req) => { seen = req.prompt; return JSON.stringify(GOOD); };
     await generateSuggestions("我的草稿句", HITS, CFG, gen);
     expect(seen).toContain("我的草稿句");
     expect(seen).toContain("学者甲的段落");
@@ -133,5 +140,53 @@ describe("withRetry", () => {
       withRetry(fn, { attempts: 3, isTransient: isTransientGeminiError, delayMs: () => 0, sleep: noSleep }),
     ).rejects.toThrow("boom");
     expect(n).toBe(1);
+  });
+});
+
+describe("generateSuggestions — Qwen fallback", () => {
+  it("falls back to the secondary generator when the primary fails", async () => {
+    const primary: Generator = async () => { throw { status: 503 }; };
+    const fallback: Generator = async () => JSON.stringify(GOOD);
+    const out = await generateSuggestions("x", HITS, { ...CFG, fallbackApiKey: "qkey" }, primary, fallback);
+    expect(out).toEqual(GOOD);
+  });
+
+  it("passes the fallback model/key/baseUrl to the secondary generator", async () => {
+    let seen: { apiKey: string; model: string; baseUrl?: string } | undefined;
+    const primary: Generator = async () => { throw new Error("down"); };
+    const fallback: Generator = async (req) => { seen = req; return JSON.stringify(GOOD); };
+    await generateSuggestions(
+      "x",
+      HITS,
+      { ...CFG, fallbackApiKey: "qkey", fallbackModel: "qwen-plus", fallbackBaseUrl: "https://dash/v1" },
+      primary,
+      fallback,
+    );
+    expect(seen?.apiKey).toBe("qkey");
+    expect(seen?.model).toBe("qwen-plus");
+    expect(seen?.baseUrl).toBe("https://dash/v1");
+  });
+
+  it("uses the fallback when no primary (Gemini) key is set", async () => {
+    const primary: Generator = async () => { throw new Error("primary should be skipped"); };
+    const fallback: Generator = async () => JSON.stringify(GOOD);
+    const out = await generateSuggestions("x", HITS, { ...CFG, apiKey: undefined, fallbackApiKey: "qkey" }, primary, fallback);
+    expect(out).toEqual(GOOD);
+  });
+
+  it("surfaces an error when both primary and fallback fail", async () => {
+    const primary: Generator = async () => { throw { status: 503 }; };
+    const fallback: Generator = async () => { throw new Error("qwen down"); };
+    await expect(
+      generateSuggestions("x", HITS, { ...CFG, fallbackApiKey: "qkey" }, primary, fallback),
+    ).rejects.toBeInstanceOf(SuggestError);
+  });
+
+  it("does not fall back when no fallback key is configured", async () => {
+    let fallbackCalled = false;
+    const primary: Generator = async () => { throw new Error("boom"); };
+    const fallback: Generator = async () => { fallbackCalled = true; return JSON.stringify(GOOD); };
+    await expect(generateSuggestions("x", HITS, CFG, primary, fallback)).rejects.toMatchObject({ kind: "network" });
+    expect(fallbackCalled).toBe(false);
   });
 });

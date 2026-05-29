@@ -114,8 +114,10 @@ interface Suggestion {
 
 | 键 | 默认 | 说明 |
 |---|---|---|
-| `parlance.suggestModel` | `gemini-3.5-flash`(繁忙/503 时回退 `gemini-2.5-flash`) | 生成模型;可改 pro 档 |
+| `parlance.suggestModel` | `gemini-3.5-flash` | 主生成模型 |
 | `parlance.suggestMaxPassages` | `6` | 喂给模型的段落数上限 |
+| `parlance.fallbackModel` | `qwen-plus` | Gemini 失败时回退的 Qwen 模型(DashScope;需 `DASHSCOPE_API_KEY`) |
+| `parlance.fallbackBaseUrl` | DashScope 兼容端点 | Qwen 回退的 OpenAI 兼容 base URL |
 
 **Key:** 只从 `process.env.GEMINI_API_KEY` 读(与 zsearch 同机制),**不写进 settings.json**(守密钥规则)。代价:从 GUI(Dock/Finder)启动的 VS Code 可能读不到该变量——见 §11 风险。
 
@@ -124,7 +126,7 @@ interface Suggestion {
 `SuggestErrorKind = "no-api-key" | "network" | "bad-output" | "no-hits" | "unknown"`
 
 - 无 key:建议区提示"缺 `GEMINI_API_KEY`,检索不受影响;请在能读到该变量的环境启动 VS Code"。
-- 网络/超时/503:transient 错误(503/429/5xx、Gemini UNAVAILABLE、fetch failed)自动 exponential-backoff 重试(默认 3 次);仍失败才提示重试。
+- 网络/超时/503:transient 错误(503/429/5xx、UNAVAILABLE、fetch failed)自动 exponential-backoff 重试(默认 3 次)。Gemini 重试仍失败(或无 GEMINI_API_KEY)且配了 `DASHSCOPE_API_KEY` 时,自动回退到 **Qwen**(`qwen-plus`,DashScope OpenAI 兼容端点,fetch + JSON mode);两者都失败才报错。
 - 非 JSON / 校验失败:`bad-output`,提示重试(不渲染半成品)。
 - 无 hits:按钮禁用 / 提示先检索。
 - 其他:surfacing 原始错误摘要(经 textContent 安全渲染,延续现有 XSS 处理)。
