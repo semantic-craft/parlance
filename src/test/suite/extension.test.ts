@@ -111,6 +111,10 @@ describe("Parlance suggestions golden path — requires GEMINI_API_KEY", () => {
     const cfg = vscode.workspace.getConfiguration("parlance");
     await cfg.update("zsearchPath", undefined, vscode.ConfigurationTarget.Global);
     await cfg.update("topK", 5, vscode.ConfigurationTarget.Global);
+    // Pin a reliably-available model so this pipeline test is deterministic: the
+    // product default (gemini-3.5-flash) can be transiently 503-overloaded, and
+    // the suggestion path itself is model-agnostic.
+    await cfg.update("suggestModel", "gemini-2.5-flash", vscode.ConfigurationTarget.Global);
     try {
       await selectAll(SAMPLE);
       await vscode.commands.executeCommand("parlance.findSimilarPhrasing");
@@ -130,6 +134,7 @@ describe("Parlance suggestions golden path — requires GEMINI_API_KEY", () => {
       assert.ok((st.count ?? 0) >= 1, "at least one rewrite");
     } finally {
       await cfg.update("topK", undefined, vscode.ConfigurationTarget.Global);
+      await cfg.update("suggestModel", undefined, vscode.ConfigurationTarget.Global);
     }
   });
 });
