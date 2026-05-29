@@ -82,5 +82,8 @@
     "mocha": "^11.7.6",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
+  },
+  "dependencies": {
+    "@google/genai": "^2.7.0"
   }
 }
