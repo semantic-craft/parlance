@@ -16,6 +16,10 @@
       {
         "command": "parlance.findSimilarPhrasing",
         "title": "Parlance: 查找相近表达"
+      },
+      {
+        "command": "parlance.generateSuggestions",
+        "title": "Parlance: 生成改写建议"
       }
     ],
     "menus": {
@@ -57,6 +61,16 @@
           "type": "number",
           "default": 10,
           "description": "召回的相近表达条数"
+        },
+        "parlance.suggestModel": {
+          "type": "string",
+          "default": "gemini-2.5-flash",
+          "description": "生成改写建议的 Gemini 模型(可改 gemini-3.5-flash / gemini-2.5-pro 等)"
+        },
+        "parlance.suggestMaxPassages": {
+          "type": "number",
+          "default": 6,
+          "description": "喂给模型的检索段落数上限"
         }
       }
     }
