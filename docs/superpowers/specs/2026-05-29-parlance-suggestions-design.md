@@ -114,7 +114,7 @@ interface Suggestion {
 
 | 键 | 默认 | 说明 |
 |---|---|---|
-| `parlance.suggestModel` | (Gemini flash 档,确切 id 在 writing-plans 联网核实) | 生成模型;需更细腻可改 pro 档 |
+| `parlance.suggestModel` | `gemini-3.5-flash`(繁忙/503 时回退 `gemini-2.5-flash`) | 生成模型;可改 pro 档 |
 | `parlance.suggestMaxPassages` | `6` | 喂给模型的段落数上限 |
 
 **Key:** 只从 `process.env.GEMINI_API_KEY` 读(与 zsearch 同机制),**不写进 settings.json**(守密钥规则)。代价:从 GUI(Dock/Finder)启动的 VS Code 可能读不到该变量——见 §11 风险。
@@ -124,7 +124,7 @@ interface Suggestion {
 `SuggestErrorKind = "no-api-key" | "network" | "bad-output" | "no-hits" | "unknown"`
 
 - 无 key:建议区提示"缺 `GEMINI_API_KEY`,检索不受影响;请在能读到该变量的环境启动 VS Code"。
-- 网络/超时:设超时,提示重试。
+- 网络/超时/503:transient 错误(503/429/5xx、Gemini UNAVAILABLE、fetch failed)自动 exponential-backoff 重试(默认 3 次);仍失败才提示重试。
 - 非 JSON / 校验失败:`bad-output`,提示重试(不渲染半成品)。
 - 无 hits:按钮禁用 / 提示先检索。
 - 其他:surfacing 原始错误摘要(经 textContent 安全渲染,延续现有 XSS 处理)。
