@@ -1,8 +1,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 import type {
-  GeminiGenerator,
-  GeminiRequest,
+  GenRequest,
+  Generator,
   PhraseHit,
   Suggestion,
   SuggestConfig,
@@ -23,7 +23,7 @@ export const SYSTEM_INSTRUCTION = [
   "只能基于用户提供的句子和检索到的段落作答,不得发明法条号、出处、作者、年份、事实或段落中没有的内容。",
   "每条改写在 basis 注明依据的段落编号(如「段落2」)或出处;每条可借用措辞在 source 注明出处。",
   "若所给段落不足以支撑某改写,在 diagnosis 中诚实说明,而不是编造。",
-  "用简体中文输出,且严格遵循给定的 JSON 结构。",
+  "用简体中文输出。只输出一个 JSON 对象,字段为:diagnosis(字符串)、rewrites(数组,每项 {text, basis})、phrasings(数组,每项 {text, source})。",
 ].join("\n");
 
 const SUGGESTION_SCHEMA = {
@@ -115,25 +115,57 @@ export async function withRetry<T>(fn: () => Promise<T>, opts: RetryOptions): Pr
 }
 
 const realSleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+const RETRY: Omit<RetryOptions, "isTransient"> & { isTransient: (e: unknown) => boolean } = {
+  attempts: 3,
+  isTransient: isTransientGeminiError,
+  delayMs: (a) => 700 * 2 ** (a - 1),
+  sleep: realSleep,
+};
 
-export const defaultGenerator: GeminiGenerator = async (req: GeminiRequest): Promise<string> => {
+/** Primary generator: Google Gemini via @google/genai, JSON-schema mode. */
+export const defaultGenerator: Generator = async (req: GenRequest): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: req.apiKey });
-  return withRetry(
-    async () => {
-      const resp = await ai.models.generateContent({
+  return withRetry(async () => {
+    const resp = await ai.models.generateContent({
+      model: req.model,
+      contents: req.prompt,
+      config: {
+        systemInstruction: req.systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema: SUGGESTION_SCHEMA,
+        temperature: 0.4,
+      },
+    });
+    return resp.text ?? "";
+  }, RETRY);
+};
+
+/** Fallback generator: Qwen via the DashScope OpenAI-compatible endpoint, JSON mode. */
+export const qwenGenerator: Generator = async (req: GenRequest): Promise<string> => {
+  const base = req.baseUrl ?? "https://dashscope.aliyuncs.com/compatible-mode/v1";
+  return withRetry(async () => {
+    const resp = await fetch(`${base}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${req.apiKey}` },
+      body: JSON.stringify({
         model: req.model,
-        contents: req.prompt,
-        config: {
-          systemInstruction: req.systemInstruction,
-          responseMimeType: "application/json",
-          responseSchema: SUGGESTION_SCHEMA,
-          temperature: 0.4,
-        },
-      });
-      return resp.text ?? "";
-    },
-    { attempts: 3, isTransient: isTransientGeminiError, delayMs: (a) => 700 * 2 ** (a - 1), sleep: realSleep },
-  );
+        messages: [
+          { role: "system", content: req.systemInstruction },
+          { role: "user", content: req.prompt },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.4,
+      }),
+    });
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      const err: Error & { status?: number } = new Error(`Qwen ${resp.status}: ${body.slice(0, 200)}`);
+      err.status = resp.status;
+      throw err;
+    }
+    const data = (await resp.json()) as { choices?: { message?: { content?: string } }[] };
+    return data.choices?.[0]?.message?.content ?? "";
+  }, RETRY);
 };
 
 function isRewrite(r: unknown): r is { text: string; basis: string } {
@@ -182,35 +214,72 @@ function classifyGenError(e: unknown): SuggestError {
   const msg = String((e as { message?: unknown }).message ?? "");
   const up = msg.toUpperCase();
   if (status === 401 || status === 403 || up.includes("API KEY") || up.includes("API_KEY") || up.includes("PERMISSION")) {
-    return new SuggestError("no-api-key", "Gemini 拒绝了 API key(无效或无权限),请检查 GEMINI_API_KEY。");
+    return new SuggestError("no-api-key", "模型拒绝了 API key(无效或无权限),请检查 GEMINI_API_KEY / DASHSCOPE_API_KEY。");
   }
   if (isTransientGeminiError(e)) {
-    return new SuggestError("network", "Gemini 暂时繁忙或不可用(已重试),请稍后再试。");
+    return new SuggestError("network", "模型暂时繁忙或不可用(已重试,含 Qwen 回退),请稍后再试。");
   }
-  return new SuggestError("network", `调用 Gemini 失败:${msg.slice(0, 200) || "未知错误"},请重试。`);
+  return new SuggestError("network", `生成失败:${msg.slice(0, 200) || "未知错误"},请重试。`);
 }
 
+/**
+ * Generate grounded suggestions. Tries the primary (Gemini) generator; if it has
+ * no key or fails (after its own retries) and a fallback key is configured, falls
+ * back to the secondary (Qwen) generator. Both receive only the grounded prompt.
+ */
 export async function generateSuggestions(
   text: string,
   hits: PhraseHit[],
   cfg: SuggestConfig,
-  gen: GeminiGenerator = defaultGenerator,
+  primary: Generator = defaultGenerator,
+  fallback: Generator = qwenGenerator,
 ): Promise<Suggestion> {
   if (!hits.length) {
     throw new SuggestError("no-hits", "请先检索到相近段落,再生成改写建议。");
   }
-  if (!cfg.apiKey) {
-    throw new SuggestError(
+  const prompt = buildPrompt(text, hits, cfg.maxPassages);
+  let raw: string | undefined;
+  let lastErr: unknown;
+
+  if (cfg.apiKey) {
+    try {
+      const out = await primary({ apiKey: cfg.apiKey, model: cfg.model, systemInstruction: SYSTEM_INSTRUCTION, prompt });
+      if (out && out.trim()) {
+        raw = out;
+      } else {
+        lastErr = new SuggestError("bad-output", "主模型返回空内容。");
+      }
+    } catch (e) {
+      lastErr = e;
+    }
+  } else {
+    lastErr = new SuggestError(
       "no-api-key",
       "缺少 GEMINI_API_KEY,无法生成建议(检索不受影响)。请在能读到该变量的环境里启动 VS Code。",
     );
   }
-  const prompt = buildPrompt(text, hits, cfg.maxPassages);
-  let raw: string;
-  try {
-    raw = await gen({ apiKey: cfg.apiKey, model: cfg.model, systemInstruction: SYSTEM_INSTRUCTION, prompt });
-  } catch (e) {
-    throw classifyGenError(e);
+
+  if (raw === undefined && cfg.fallbackApiKey) {
+    try {
+      const out = await fallback({
+        apiKey: cfg.fallbackApiKey,
+        model: cfg.fallbackModel,
+        systemInstruction: SYSTEM_INSTRUCTION,
+        prompt,
+        baseUrl: cfg.fallbackBaseUrl,
+      });
+      if (out && out.trim()) {
+        raw = out;
+      } else {
+        lastErr = new SuggestError("bad-output", "回退模型返回空内容。");
+      }
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+
+  if (raw === undefined) {
+    throw classifyGenError(lastErr);
   }
   return parseSuggestion(raw);
 }

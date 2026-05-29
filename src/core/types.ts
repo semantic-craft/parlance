@@ -37,13 +37,18 @@ export interface SuggestConfig {
   model: string;
   maxPassages: number;
   apiKey: string | undefined;
+  fallbackModel: string;
+  fallbackApiKey: string | undefined;
+  fallbackBaseUrl: string;
 }
 
-export interface GeminiRequest {
+export interface GenRequest {
   apiKey: string;
   model: string;
   systemInstruction: string;
   prompt: string;
+  /** OpenAI-compatible base URL (used by the Qwen/DashScope fallback). */
+  baseUrl?: string;
 }
 
-export type GeminiGenerator = (req: GeminiRequest) => Promise<string>;
+export type Generator = (req: GenRequest) => Promise<string>;
