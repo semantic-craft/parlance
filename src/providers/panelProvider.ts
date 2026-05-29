@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import * as vscode from "vscode";
 import { renderHits } from "../webview/render";
-import type { PhraseHit } from "../core/types";
+import { renderSuggestion } from "../webview/renderSuggestion";
+import type { PhraseHit, Suggestion } from "../core/types";
 
 /**
  * Read-only snapshot of the panel's last state. Exposed purely for
@@ -14,13 +15,34 @@ export interface PanelState {
   message?: string;
 }
 
+/** Read-only snapshot of the suggestion sub-panel state (for tests). */
+export interface SuggestionState {
+  kind: "loading" | "suggestions" | "error";
+  count?: number;
+  message?: string;
+}
+
 export class PanelProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "parlance.results";
   public lastState?: PanelState;
+  public lastSuggestionState?: SuggestionState;
   private view?: vscode.WebviewView;
   private pending?: { type: string; [k: string]: unknown };
+  private lastQuery?: { text: string; hits: PhraseHit[] };
+  private suggestionHandler?: (text: string, hits: PhraseHit[]) => void | Promise<void>;
 
   constructor(private readonly extensionUri: vscode.Uri) {}
+
+  setSuggestionHandler(fn: (text: string, hits: PhraseHit[]) => void | Promise<void>): void {
+    this.suggestionHandler = fn;
+  }
+
+  /** Invoke the wired suggestion handler with the last query (webview button or command). */
+  requestSuggestions(): void {
+    if (this.lastQuery) {
+      void this.suggestionHandler?.(this.lastQuery.text, this.lastQuery.hits);
+    }
+  }
 
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
@@ -35,6 +57,8 @@ export class PanelProvider implements vscode.WebviewViewProvider {
         void vscode.window.showInformationMessage("已复制到剪贴板");
       } else if (msg.type === "jump") {
         void vscode.env.openExternal(vscode.Uri.parse(`zotero://select/library/items/${msg.key}`));
+      } else if (msg.type === "suggest") {
+        this.requestSuggestions();
       }
     });
     if (this.pending) {
@@ -48,14 +72,31 @@ export class PanelProvider implements vscode.WebviewViewProvider {
     this.post({ type: "loading" });
   }
 
-  showResults(hits: PhraseHit[]): void {
+  showResults(text: string, hits: PhraseHit[]): void {
+    this.lastQuery = { text, hits };
+    this.lastSuggestionState = undefined;
     this.lastState = { kind: "results", count: hits.length };
-    this.post({ type: "results", html: renderHits(hits) });
+    this.post({ type: "results", html: renderHits(hits), count: hits.length });
   }
 
   showError(message: string): void {
     this.lastState = { kind: "error", message };
     this.post({ type: "error", message });
+  }
+
+  showSuggestionLoading(): void {
+    this.lastSuggestionState = { kind: "loading" };
+    this.post({ type: "suggestion-loading" });
+  }
+
+  showSuggestions(s: Suggestion): void {
+    this.lastSuggestionState = { kind: "suggestions", count: s.rewrites.length };
+    this.post({ type: "suggestions", html: renderSuggestion(s) });
+  }
+
+  showSuggestionError(message: string): void {
+    this.lastSuggestionState = { kind: "error", message };
+    this.post({ type: "suggestion-error", message });
   }
 
   private post(message: { type: string; [k: string]: unknown }): void {
