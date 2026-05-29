@@ -1,12 +1,14 @@
 import * as vscode from "vscode";
 import { PanelProvider } from "./providers/panelProvider";
-import type { PanelState } from "./providers/panelProvider";
-import { readConfig } from "./core/config";
+import type { PanelState, SuggestionState } from "./providers/panelProvider";
+import { readConfig, readSuggestConfig } from "./core/config";
 import { findPhrases } from "./core/zsearchClient";
+import { generateSuggestions, SuggestError } from "./core/suggestClient";
 
 /** Public API returned by activate(), consumed by integration tests. */
 export interface ParlanceApi {
   getLastState(): PanelState | undefined;
+  getLastSuggestionState(): SuggestionState | undefined;
 }
 
 export function activate(context: vscode.ExtensionContext): ParlanceApi {
@@ -14,6 +16,17 @@ export function activate(context: vscode.ExtensionContext): ParlanceApi {
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(PanelProvider.viewType, provider),
   );
+
+  provider.setSuggestionHandler(async (text, hits) => {
+    provider.showSuggestionLoading();
+    try {
+      const suggestion = await generateSuggestions(text, hits, readSuggestConfig());
+      provider.showSuggestions(suggestion);
+    } catch (e) {
+      const message = e instanceof SuggestError ? e.message : String(e);
+      provider.showSuggestionError(message);
+    }
+  });
 
   context.subscriptions.push(
     vscode.commands.registerCommand("parlance.findSimilarPhrasing", async () => {
@@ -26,7 +39,7 @@ export function activate(context: vscode.ExtensionContext): ParlanceApi {
       provider.showLoading();
       try {
         const hits = await findPhrases(selection, readConfig());
-        provider.showResults(hits);
+        provider.showResults(selection, hits);
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         provider.showError(message);
@@ -34,7 +47,16 @@ export function activate(context: vscode.ExtensionContext): ParlanceApi {
     }),
   );
 
-  return { getLastState: () => provider.lastState };
+  context.subscriptions.push(
+    vscode.commands.registerCommand("parlance.generateSuggestions", () => {
+      provider.requestSuggestions();
+    }),
+  );
+
+  return {
+    getLastState: () => provider.lastState,
+    getLastSuggestionState: () => provider.lastSuggestionState,
+  };
 }
 
 export function deactivate(): void {}
