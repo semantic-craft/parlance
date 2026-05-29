@@ -2,7 +2,7 @@
   "name": "parlance",
   "displayName": "Parlance",
   "description": "Find how scholars phrased it — semantic phrasing search over your Zotero full-text via zsearch.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "xwzhangSZU",
   "license": "MIT",
   "repository": {
@@ -28,6 +28,7 @@
     "Other"
   ],
   "main": "./dist/extension.js",
+  "icon": "media/icon.png",
   "contributes": {
     "commands": [
       {
@@ -81,8 +82,8 @@
         },
         "parlance.suggestModel": {
           "type": "string",
-          "default": "gemini-2.5-flash",
-          "description": "生成改写建议的 Gemini 模型(可改 gemini-3.5-flash / gemini-2.5-pro 等)"
+          "default": "gemini-3.5-flash",
+          "description": "生成改写建议的 Gemini 模型(默认 gemini-3.5-flash;繁忙/503 时可改 gemini-2.5-flash / gemini-2.5-pro)"
         },
         "parlance.suggestMaxPassages": {
           "type": "number",
