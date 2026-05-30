@@ -29,7 +29,7 @@ This is a thin front-end over a local setup; it is most useful if you already ru
 | `parlance.suggestModel` | `gemini-3.5-flash` | Primary Gemini model for suggestions |
 | `parlance.suggestMaxPassages` | `6` | Max retrieved passages fed to the model |
 | `parlance.fallbackModel` | `qwen-plus` | Qwen model (DashScope) used when Gemini fails; needs `DASHSCOPE_API_KEY` |
-| `parlance.fallbackBaseUrl` | DashScope endpoint | OpenAI-compatible base URL for the Qwen fallback |
+| `parlance.fallbackBaseUrl` | Aliyun token-plan endpoint | OpenAI-compatible base URL for the Qwen fallback (TTS isn't covered by the token plan — point it at the standard DashScope endpoint if you need TTS) |
 
 ## Privacy & grounding
 
