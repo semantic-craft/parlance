@@ -140,9 +140,9 @@ export const defaultGenerator: Generator = async (req: GenRequest): Promise<stri
   }, RETRY);
 };
 
-/** Fallback generator: Qwen via the DashScope OpenAI-compatible endpoint, JSON mode. */
+/** Fallback generator: Qwen via the Aliyun OpenAI-compatible endpoint (token-plan by default), JSON mode. */
 export const qwenGenerator: Generator = async (req: GenRequest): Promise<string> => {
-  const base = req.baseUrl ?? "https://dashscope.aliyuncs.com/compatible-mode/v1";
+  const base = req.baseUrl ?? "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1";
   return withRetry(async () => {
     const resp = await fetch(`${base}/chat/completions`, {
       method: "POST",
