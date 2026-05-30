@@ -19,7 +19,7 @@ export function readSuggestConfig(): SuggestConfig {
     fallbackApiKey: process.env.DASHSCOPE_API_KEY,
     fallbackBaseUrl: c.get<string>(
       "fallbackBaseUrl",
-      "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
     ),
   };
 }
