@@ -49,7 +49,7 @@ export interface GenRequest {
   model: string;
   systemInstruction: string;
   prompt: string;
-  /** OpenAI-compatible base URL (used by the Qwen/DashScope fallback). */
+  /** OpenAI-compatible base URL (used by the Qwen Token Plan fallback). */
   baseUrl?: string;
 }
 
