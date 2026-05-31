@@ -2,16 +2,16 @@
   "name": "parlance",
   "displayName": "Parlance",
   "description": "Find how scholars phrased it — semantic phrasing search over your Zotero full-text via zsearch.",
-  "version": "0.0.8",
-  "publisher": "xwzhangSZU",
+  "version": "0.0.9",
+  "publisher": "semantic-craft",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/xwzhangSZU/parlance.git"
+    "url": "https://github.com/semantic-craft/parlance.git"
   },
-  "homepage": "https://github.com/xwzhangSZU/parlance#readme",
+  "homepage": "https://github.com/semantic-craft/parlance#readme",
   "bugs": {
-    "url": "https://github.com/xwzhangSZU/parlance/issues"
+    "url": "https://github.com/semantic-craft/parlance/issues"
   },
   "keywords": [
     "zotero",
