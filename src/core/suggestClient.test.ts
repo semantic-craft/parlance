@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
-import { buildPrompt, generateSuggestions, isTransientGeminiError, SuggestError, withRetry } from "./suggestClient";
+import { buildPrompt, generateSuggestions, isTransientGeminiError, qwenGenerator, SuggestError, withRetry } from "./suggestClient";
 import type { Generator, PhraseHit, Suggestion } from "./types";
 
 const HITS: PhraseHit[] = [
@@ -188,5 +188,60 @@ describe("generateSuggestions — Qwen fallback", () => {
     const fallback: Generator = async () => { fallbackCalled = true; return JSON.stringify(GOOD); };
     await expect(generateSuggestions("x", HITS, CFG, primary, fallback)).rejects.toMatchObject({ kind: "network" });
     expect(fallbackCalled).toBe(false);
+  });
+});
+
+describe("qwenGenerator", () => {
+  it("uses Anthropic Messages for the default Token Plan endpoint", async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ content: [{ type: "text", text: JSON.stringify(GOOD) }] }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const out = await qwenGenerator({
+        apiKey: "qkey",
+        model: "qwen3.6-flash",
+        systemInstruction: "sys",
+        prompt: "prompt",
+      });
+      expect(JSON.parse(out)).toEqual(GOOD);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe("https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic/v1/messages");
+      expect((init.headers as Record<string, string>)["anthropic-version"]).toBe("2023-06-01");
+      expect(JSON.parse(String(init.body))).toMatchObject({
+        model: "qwen3.6-flash",
+        system: "sys",
+        thinking: { type: "disabled" },
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("keeps OpenAI-compatible requests when a compatible-mode URL is configured", async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(GOOD) } }] }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const out = await qwenGenerator({
+        apiKey: "qkey",
+        model: "qwen3.6-flash",
+        systemInstruction: "sys",
+        prompt: "prompt",
+        baseUrl: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
+      });
+      expect(JSON.parse(out)).toEqual(GOOD);
+      const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe("https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions");
+      expect(JSON.parse(String(init.body))).toMatchObject({
+        model: "qwen3.6-flash",
+        response_format: { type: "json_object" },
+        enable_thinking: false,
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

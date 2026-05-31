@@ -140,11 +140,67 @@ export const defaultGenerator: Generator = async (req: GenRequest): Promise<stri
   }, RETRY);
 };
 
-/** Fallback generator: Qwen via the Aliyun OpenAI-compatible endpoint (token-plan by default), JSON mode. */
+const QWEN_TOKEN_PLAN_ANTHROPIC_BASE = "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic";
+
+function isAnthropicBaseUrl(baseUrl: string): boolean {
+  try {
+    const parsed = new URL(baseUrl);
+    return /\/anthropic(?:\/|$)/i.test(parsed.pathname) || /\/v1\/messages$/i.test(parsed.pathname);
+  } catch {
+    return /\/anthropic(?:\/|$|[?#])|\/v1\/messages(?:$|[?#])/i.test(baseUrl);
+  }
+}
+
+function chatCompletionsUrl(baseUrl: string): string {
+  const trimmed = baseUrl.replace(/\/+$/, "");
+  return trimmed.endsWith("/chat/completions") ? trimmed : `${trimmed}/chat/completions`;
+}
+
+function anthropicMessagesUrl(baseUrl: string): string {
+  const trimmed = baseUrl.replace(/\/+$/, "");
+  if (trimmed.endsWith("/v1/messages")) return trimmed;
+  if (trimmed.endsWith("/v1")) return `${trimmed}/messages`;
+  return `${trimmed}/v1/messages`;
+}
+
+/** Fallback generator: Qwen via Aliyun Token Plan, defaulting to Anthropic Messages. */
 export const qwenGenerator: Generator = async (req: GenRequest): Promise<string> => {
-  const base = req.baseUrl ?? "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1";
+  const base = req.baseUrl ?? QWEN_TOKEN_PLAN_ANTHROPIC_BASE;
   return withRetry(async () => {
-    const resp = await fetch(`${base}/chat/completions`, {
+    if (isAnthropicBaseUrl(base)) {
+      const resp = await fetch(anthropicMessagesUrl(base), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${req.apiKey}`,
+          "x-api-key": req.apiKey,
+          "api-key": req.apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: req.model,
+          system: req.systemInstruction,
+          messages: [{ role: "user", content: req.prompt }],
+          max_tokens: 4096,
+          temperature: 0.4,
+          thinking: { type: "disabled" },
+        }),
+      });
+      if (!resp.ok) {
+        const body = await resp.text().catch(() => "");
+        const err: Error & { status?: number } = new Error(`Qwen ${resp.status}: ${body.slice(0, 200)}`);
+        err.status = resp.status;
+        throw err;
+      }
+      const data = (await resp.json()) as { content?: { type?: string; text?: unknown }[] };
+      return data.content
+        ?.filter((part) => part.type === "text" || typeof part.text === "string")
+        .map((part) => (typeof part.text === "string" ? part.text : ""))
+        .join("")
+        .trim() ?? "";
+    }
+
+    const resp = await fetch(chatCompletionsUrl(base), {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${req.apiKey}` },
       body: JSON.stringify({
@@ -155,6 +211,7 @@ export const qwenGenerator: Generator = async (req: GenRequest): Promise<string>
         ],
         response_format: { type: "json_object" },
         temperature: 0.4,
+        enable_thinking: false,
       }),
     });
     if (!resp.ok) {
