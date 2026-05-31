@@ -22,7 +22,7 @@ export function readSuggestConfig(): SuggestConfig {
       || process.env.QWEN_API_KEY,
     fallbackBaseUrl: c.get<string>(
       "fallbackBaseUrl",
-      "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
+      "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
     ),
   };
 }
