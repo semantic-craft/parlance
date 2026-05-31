@@ -2,7 +2,7 @@
   "name": "parlance",
   "displayName": "Parlance",
   "description": "Find how scholars phrased it — semantic phrasing search over your Zotero full-text via zsearch.",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "publisher": "xwzhangSZU",
   "license": "MIT",
   "repository": {
@@ -97,8 +97,8 @@
         },
         "parlance.fallbackBaseUrl": {
           "type": "string",
-          "default": "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
-          "description": "Qwen 文本回退用的 Token Plan OpenAI 兼容端点。此扩展没有 TTS 功能，不使用 DashScope TTS 端点。"
+          "default": "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
+          "description": "Qwen 文本回退用的 Token Plan Anthropic Messages 端点。此扩展没有 TTS 功能，不使用 DashScope TTS 端点。"
         }
       }
     }

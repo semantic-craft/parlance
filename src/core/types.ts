@@ -49,7 +49,7 @@ export interface GenRequest {
   model: string;
   systemInstruction: string;
   prompt: string;
-  /** OpenAI-compatible base URL (used by the Qwen Token Plan fallback). */
+  /** Token Plan base URL (OpenAI-compatible or Anthropic-compatible). */
   baseUrl?: string;
 }
 
