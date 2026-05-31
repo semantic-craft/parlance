@@ -122,7 +122,7 @@ const RETRY: Omit<RetryOptions, "isTransient"> & { isTransient: (e: unknown) => 
   sleep: realSleep,
 };
 
-/** Primary generator: Google Gemini via @google/genai, JSON-schema mode. */
+/** Gemini generator via @google/genai, JSON-schema mode. */
 export const defaultGenerator: Generator = async (req: GenRequest): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: req.apiKey });
   return withRetry(async () => {
@@ -138,6 +138,10 @@ export const defaultGenerator: Generator = async (req: GenRequest): Promise<stri
     });
     return resp.text ?? "";
   }, RETRY);
+};
+
+export const modelAwareGenerator: Generator = async (req: GenRequest): Promise<string> => {
+  return /^qwen/i.test(req.model) ? qwenGenerator(req) : defaultGenerator(req);
 };
 
 const QWEN_TOKEN_PLAN_ANTHROPIC_BASE = "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic";
@@ -280,16 +284,16 @@ function classifyGenError(e: unknown): SuggestError {
 }
 
 /**
- * Generate grounded suggestions. Tries the primary (Gemini) generator; if it has
- * no key or fails (after its own retries) and a fallback key is configured, falls
- * back to the secondary (Qwen) generator. Both receive only the grounded prompt.
+ * Generate grounded suggestions. Tries the configured primary model first; if it
+ * has no key or fails and a fallback key is configured, tries the fallback model.
+ * Both receive only the grounded prompt.
  */
 export async function generateSuggestions(
   text: string,
   hits: PhraseHit[],
   cfg: SuggestConfig,
-  primary: Generator = defaultGenerator,
-  fallback: Generator = qwenGenerator,
+  primary: Generator = modelAwareGenerator,
+  fallback: Generator = modelAwareGenerator,
 ): Promise<Suggestion> {
   if (!hits.length) {
     throw new SuggestError("no-hits", "请先检索到相近段落,再生成改写建议。");
@@ -301,7 +305,13 @@ export async function generateSuggestions(
 
   if (cfg.apiKey) {
     try {
-      const out = await primary({ apiKey: cfg.apiKey, model: cfg.model, systemInstruction: SYSTEM_INSTRUCTION, prompt });
+      const out = await primary({
+        apiKey: cfg.apiKey,
+        model: cfg.model,
+        systemInstruction: SYSTEM_INSTRUCTION,
+        prompt,
+        baseUrl: cfg.baseUrl,
+      });
       if (out && out.trim()) {
         raw = out;
         usedModel = cfg.model;
@@ -314,7 +324,7 @@ export async function generateSuggestions(
   } else {
     lastErr = new SuggestError(
       "no-api-key",
-      "缺少 GEMINI_API_KEY,无法生成建议(检索不受影响)。请在能读到该变量的环境里启动 VS Code。",
+      "缺少 TOKEN_PLAN_API_KEY/QWEN_API_KEY,无法生成建议(检索不受影响)。请在能读到该变量的环境里启动 VS Code。",
     );
   }
 
@@ -325,7 +335,7 @@ export async function generateSuggestions(
         model: cfg.fallbackModel,
         systemInstruction: SYSTEM_INSTRUCTION,
         prompt,
-        baseUrl: cfg.fallbackBaseUrl,
+        baseUrl: cfg.fallbackBaseUrl ?? cfg.baseUrl,
       });
       if (out && out.trim()) {
         raw = out;

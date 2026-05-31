@@ -99,10 +99,14 @@ describe("Parlance golden path — requires GEMINI_API_KEY + a populated index",
   });
 });
 
-describe("Parlance suggestions golden path — requires GEMINI_API_KEY", () => {
+describe("Parlance suggestions golden path — requires a Token Plan Qwen key", () => {
   it("generates grounded suggestions after a real search", async function () {
-    if (!process.env.GEMINI_API_KEY) {
-      console.log("[skip] GEMINI_API_KEY not in env — skipping live suggestion path");
+    const tokenPlanKey = process.env.TOKEN_PLAN_API_KEY
+      || process.env.BAILIAN_TOKEN_PLAN_API_KEY
+      || process.env.QWEN_TOKEN_PLAN_API_KEY
+      || process.env.QWEN_API_KEY;
+    if (!tokenPlanKey) {
+      console.log("[skip] TOKEN_PLAN_API_KEY/QWEN_API_KEY not in env — skipping live suggestion path");
       this.skip();
     }
     this.timeout(120000);
@@ -111,10 +115,7 @@ describe("Parlance suggestions golden path — requires GEMINI_API_KEY", () => {
     const cfg = vscode.workspace.getConfiguration("parlance");
     await cfg.update("zsearchPath", undefined, vscode.ConfigurationTarget.Global);
     await cfg.update("topK", 5, vscode.ConfigurationTarget.Global);
-    // Pin a reliably-available model so this pipeline test is deterministic: the
-    // product default (gemini-3.5-flash) can be transiently 503-overloaded, and
-    // the suggestion path itself is model-agnostic.
-    await cfg.update("suggestModel", "gemini-2.5-flash", vscode.ConfigurationTarget.Global);
+    await cfg.update("suggestModel", "qwen3.6-flash", vscode.ConfigurationTarget.Global);
     try {
       await selectAll(SAMPLE);
       await vscode.commands.executeCommand("parlance.findSimilarPhrasing");
@@ -132,7 +133,7 @@ describe("Parlance suggestions golden path — requires GEMINI_API_KEY", () => {
       assert.ok(st, "suggestion state set");
       assert.strictEqual(st.kind, "suggestions", `expected suggestions, got ${st.kind}: ${st.message ?? ""}`);
       assert.ok((st.count ?? 0) >= 1, "at least one rewrite");
-      assert.strictEqual(st.model, "gemini-2.5-flash", "badge reflects the pinned Gemini model");
+      assert.strictEqual(st.model, "qwen3.6-flash", "badge reflects the pinned Qwen model");
     } finally {
       await cfg.update("topK", undefined, vscode.ConfigurationTarget.Global);
       await cfg.update("suggestModel", undefined, vscode.ConfigurationTarget.Global);
@@ -140,8 +141,8 @@ describe("Parlance suggestions golden path — requires GEMINI_API_KEY", () => {
   });
 });
 
-describe("Parlance Qwen fallback golden path — requires a Token Plan Qwen key", () => {
-  it("falls back to Qwen when the Gemini model is unavailable", async function () {
+describe("Parlance Gemini fallback golden path — requires Qwen + Gemini keys", () => {
+  it("falls back to Gemini when the Qwen model is unavailable", async function () {
     const tokenPlanKey = process.env.TOKEN_PLAN_API_KEY
       || process.env.BAILIAN_TOKEN_PLAN_API_KEY
       || process.env.QWEN_TOKEN_PLAN_API_KEY
@@ -156,9 +157,9 @@ describe("Parlance Qwen fallback golden path — requires a Token Plan Qwen key"
     const cfg = vscode.workspace.getConfiguration("parlance");
     await cfg.update("zsearchPath", undefined, vscode.ConfigurationTarget.Global);
     await cfg.update("topK", 5, vscode.ConfigurationTarget.Global);
-    // Force the Gemini primary to fail (nonexistent model) so the Qwen fallback runs.
-    await cfg.update("suggestModel", "gemini-nonexistent-model-xyz", vscode.ConfigurationTarget.Global);
-    await cfg.update("fallbackModel", "qwen3.6-flash", vscode.ConfigurationTarget.Global);
+    // Force the Qwen primary to fail (nonexistent model) so the Gemini fallback runs.
+    await cfg.update("suggestModel", "qwen-nonexistent-model-xyz", vscode.ConfigurationTarget.Global);
+    await cfg.update("fallbackModel", "gemini-3.5-flash", vscode.ConfigurationTarget.Global);
     try {
       await selectAll(SAMPLE);
       await vscode.commands.executeCommand("parlance.findSimilarPhrasing");
@@ -173,9 +174,9 @@ describe("Parlance Qwen fallback golden path — requires a Token Plan Qwen key"
       }
       const st = api.getLastSuggestionState();
       assert.ok(st, "suggestion state set");
-      assert.strictEqual(st.kind, "suggestions", `expected suggestions via Qwen fallback, got ${st.kind}: ${st.message ?? ""}`);
-      assert.ok((st.count ?? 0) >= 1, "at least one rewrite from the Qwen fallback");
-      assert.strictEqual(st.model, "qwen3.6-flash", "badge reflects the Qwen fallback model");
+      assert.strictEqual(st.kind, "suggestions", `expected suggestions via Gemini fallback, got ${st.kind}: ${st.message ?? ""}`);
+      assert.ok((st.count ?? 0) >= 1, "at least one rewrite from the Gemini fallback");
+      assert.strictEqual(st.model, "gemini-3.5-flash", "badge reflects the Gemini fallback model");
     } finally {
       await cfg.update("suggestModel", undefined, vscode.ConfigurationTarget.Global);
       await cfg.update("fallbackModel", undefined, vscode.ConfigurationTarget.Global);
