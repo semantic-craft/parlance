@@ -140,10 +140,14 @@ describe("Parlance suggestions golden path — requires GEMINI_API_KEY", () => {
   });
 });
 
-describe("Parlance Qwen fallback golden path — requires DASHSCOPE_API_KEY", () => {
+describe("Parlance Qwen fallback golden path — requires a Token Plan Qwen key", () => {
   it("falls back to Qwen when the Gemini model is unavailable", async function () {
-    if (!process.env.DASHSCOPE_API_KEY || !process.env.GEMINI_API_KEY) {
-      console.log("[skip] need both GEMINI_API_KEY + DASHSCOPE_API_KEY — skipping Qwen fallback path");
+    const tokenPlanKey = process.env.TOKEN_PLAN_API_KEY
+      || process.env.BAILIAN_TOKEN_PLAN_API_KEY
+      || process.env.QWEN_TOKEN_PLAN_API_KEY
+      || process.env.QWEN_API_KEY;
+    if (!tokenPlanKey || !process.env.GEMINI_API_KEY) {
+      console.log("[skip] need both GEMINI_API_KEY + TOKEN_PLAN_API_KEY — skipping Qwen fallback path");
       this.skip();
     }
     this.timeout(120000);
@@ -154,7 +158,7 @@ describe("Parlance Qwen fallback golden path — requires DASHSCOPE_API_KEY", ()
     await cfg.update("topK", 5, vscode.ConfigurationTarget.Global);
     // Force the Gemini primary to fail (nonexistent model) so the Qwen fallback runs.
     await cfg.update("suggestModel", "gemini-nonexistent-model-xyz", vscode.ConfigurationTarget.Global);
-    await cfg.update("fallbackModel", "qwen-plus", vscode.ConfigurationTarget.Global);
+    await cfg.update("fallbackModel", "qwen3.6-flash", vscode.ConfigurationTarget.Global);
     try {
       await selectAll(SAMPLE);
       await vscode.commands.executeCommand("parlance.findSimilarPhrasing");
@@ -171,7 +175,7 @@ describe("Parlance Qwen fallback golden path — requires DASHSCOPE_API_KEY", ()
       assert.ok(st, "suggestion state set");
       assert.strictEqual(st.kind, "suggestions", `expected suggestions via Qwen fallback, got ${st.kind}: ${st.message ?? ""}`);
       assert.ok((st.count ?? 0) >= 1, "at least one rewrite from the Qwen fallback");
-      assert.strictEqual(st.model, "qwen-plus", "badge reflects the Qwen fallback model");
+      assert.strictEqual(st.model, "qwen3.6-flash", "badge reflects the Qwen fallback model");
     } finally {
       await cfg.update("suggestModel", undefined, vscode.ConfigurationTarget.Global);
       await cfg.update("fallbackModel", undefined, vscode.ConfigurationTarget.Global);
