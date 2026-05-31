@@ -11,7 +11,7 @@ This is a thin front-end over a local setup; it is most useful if you already ru
 - **`zsearch`** (from zotero-cli-agent) on your `PATH`, or set `parlance.zsearchPath` to its absolute path.
 - A **populated vector index** over your Zotero full-text (`zsearch sync`).
 - **`GEMINI_API_KEY`** available in the VS Code process environment — used for retrieval embeddings and, optionally, for rewrite suggestions. (Launch VS Code from a shell where this variable is set.)
-- *(Optional)* **`DASHSCOPE_API_KEY`** — if set, rewrite suggestions automatically fall back to Qwen (Alibaba DashScope) whenever Gemini is unavailable (e.g. 503 high-demand).
+- *(Optional)* **`TOKEN_PLAN_API_KEY`** / **`BAILIAN_TOKEN_PLAN_API_KEY`** / **`QWEN_TOKEN_PLAN_API_KEY`** — if set, rewrite suggestions automatically fall back to Qwen Token Plan whenever Gemini is unavailable (e.g. 503 high-demand).
 
 ## Usage
 
@@ -28,12 +28,12 @@ This is a thin front-end over a local setup; it is most useful if you already ru
 | `parlance.topK` | `10` | Number of passages to retrieve |
 | `parlance.suggestModel` | `gemini-3.5-flash` | Primary Gemini model for suggestions |
 | `parlance.suggestMaxPassages` | `6` | Max retrieved passages fed to the model |
-| `parlance.fallbackModel` | `qwen-plus` | Qwen model (DashScope) used when Gemini fails; needs `DASHSCOPE_API_KEY` |
-| `parlance.fallbackBaseUrl` | Aliyun token-plan endpoint | OpenAI-compatible base URL for the Qwen fallback (TTS isn't covered by the token plan — point it at the standard DashScope endpoint if you need TTS) |
+| `parlance.fallbackModel` | `qwen3.6-flash` | Qwen Token Plan model used when Gemini fails; use `qwen3.6-plus` if you want the stronger option |
+| `parlance.fallbackBaseUrl` | Aliyun Token Plan endpoint | OpenAI-compatible base URL for the Qwen text fallback |
 
 ## Privacy & grounding
 
-Rewrite suggestions are generated **only** from the passages already retrieved from your own library; the model is instructed not to invent sources, statute numbers, authors, or facts. Transient model errors (e.g. 503) are retried with backoff, and if Gemini stays unavailable the request automatically falls back to Qwen (when `DASHSCOPE_API_KEY` is set). The suggestion panel labels which model produced it (Gemini or the Qwen fallback). Your draft text is never modified by the extension — suggestions are copy-only.
+Rewrite suggestions are generated **only** from the passages already retrieved from your own library; the model is instructed not to invent sources, statute numbers, authors, or facts. Transient model errors (e.g. 503) are retried with backoff, and if Gemini stays unavailable the request automatically falls back to Qwen Token Plan (when a Token Plan key is set). The suggestion panel labels which model produced it (Gemini or the Qwen fallback). Your draft text is never modified by the extension — suggestions are copy-only.
 
 ## License
 

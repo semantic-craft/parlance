@@ -36,7 +36,7 @@ describe("renderSuggestion", () => {
   });
 
   it("shows a Qwen badge for a qwen model", () => {
-    expect(renderSuggestion({ ...S, model: "qwen-plus" })).toContain("Qwen");
+    expect(renderSuggestion({ ...S, model: "qwen3.6-flash" })).toContain("Qwen");
   });
 
   it("shows a Gemini badge for a gemini model", () => {

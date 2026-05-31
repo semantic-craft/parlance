@@ -214,7 +214,7 @@ function classifyGenError(e: unknown): SuggestError {
   const msg = String((e as { message?: unknown }).message ?? "");
   const up = msg.toUpperCase();
   if (status === 401 || status === 403 || up.includes("API KEY") || up.includes("API_KEY") || up.includes("PERMISSION")) {
-    return new SuggestError("no-api-key", "模型拒绝了 API key(无效或无权限),请检查 GEMINI_API_KEY / DASHSCOPE_API_KEY。");
+    return new SuggestError("no-api-key", "模型拒绝了 API key(无效或无权限),请检查 GEMINI_API_KEY / TOKEN_PLAN_API_KEY。");
   }
   if (isTransientGeminiError(e)) {
     return new SuggestError("network", "模型暂时繁忙或不可用(已重试,含 Qwen 回退),请稍后再试。");

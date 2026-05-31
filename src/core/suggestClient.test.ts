@@ -16,9 +16,9 @@ const CFG = {
   model: "gemini-2.5-flash",
   maxPassages: 6,
   apiKey: "k",
-  fallbackModel: "qwen-plus",
+  fallbackModel: "qwen3.6-flash",
   fallbackApiKey: undefined,
-  fallbackBaseUrl: "https://dash/v1",
+  fallbackBaseUrl: "https://token-plan.example/v1",
 };
 
 const genReturning = (s: string): Generator => async () => s;
@@ -148,7 +148,7 @@ describe("generateSuggestions — Qwen fallback", () => {
     const primary: Generator = async () => { throw { status: 503 }; };
     const fallback: Generator = async () => JSON.stringify(GOOD);
     const out = await generateSuggestions("x", HITS, { ...CFG, fallbackApiKey: "qkey" }, primary, fallback);
-    expect(out).toEqual({ ...GOOD, model: "qwen-plus" });
+    expect(out).toEqual({ ...GOOD, model: "qwen3.6-flash" });
   });
 
   it("passes the fallback model/key/baseUrl to the secondary generator", async () => {
@@ -158,20 +158,20 @@ describe("generateSuggestions — Qwen fallback", () => {
     await generateSuggestions(
       "x",
       HITS,
-      { ...CFG, fallbackApiKey: "qkey", fallbackModel: "qwen-plus", fallbackBaseUrl: "https://dash/v1" },
+      { ...CFG, fallbackApiKey: "qkey", fallbackModel: "qwen3.6-plus", fallbackBaseUrl: "https://token-plan.example/v1" },
       primary,
       fallback,
     );
     expect(seen?.apiKey).toBe("qkey");
-    expect(seen?.model).toBe("qwen-plus");
-    expect(seen?.baseUrl).toBe("https://dash/v1");
+    expect(seen?.model).toBe("qwen3.6-plus");
+    expect(seen?.baseUrl).toBe("https://token-plan.example/v1");
   });
 
   it("uses the fallback when no primary (Gemini) key is set", async () => {
     const primary: Generator = async () => { throw new Error("primary should be skipped"); };
     const fallback: Generator = async () => JSON.stringify(GOOD);
     const out = await generateSuggestions("x", HITS, { ...CFG, apiKey: undefined, fallbackApiKey: "qkey" }, primary, fallback);
-    expect(out).toEqual({ ...GOOD, model: "qwen-plus" });
+    expect(out).toEqual({ ...GOOD, model: "qwen3.6-flash" });
   });
 
   it("surfaces an error when both primary and fallback fail", async () => {
