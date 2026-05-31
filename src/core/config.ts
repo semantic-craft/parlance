@@ -11,18 +11,20 @@ export function readConfig(): ParlanceConfig {
 
 export function readSuggestConfig(): SuggestConfig {
   const c = vscode.workspace.getConfiguration("parlance");
+  const tokenPlanApiKey = process.env.TOKEN_PLAN_API_KEY
+    || process.env.BAILIAN_TOKEN_PLAN_API_KEY
+    || process.env.QWEN_TOKEN_PLAN_API_KEY
+    || process.env.QWEN_API_KEY;
+  const qwenBaseUrl = c.get<string>(
+    "fallbackBaseUrl",
+    "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
+  );
   return {
-    model: c.get<string>("suggestModel", "gemini-3.5-flash"),
+    model: c.get<string>("suggestModel", "qwen3.6-flash"),
     maxPassages: c.get<number>("suggestMaxPassages", 6),
-    apiKey: process.env.GEMINI_API_KEY,
-    fallbackModel: c.get<string>("fallbackModel", "qwen3.6-flash"),
-    fallbackApiKey: process.env.TOKEN_PLAN_API_KEY
-      || process.env.BAILIAN_TOKEN_PLAN_API_KEY
-      || process.env.QWEN_TOKEN_PLAN_API_KEY
-      || process.env.QWEN_API_KEY,
-    fallbackBaseUrl: c.get<string>(
-      "fallbackBaseUrl",
-      "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
-    ),
+    apiKey: tokenPlanApiKey,
+    baseUrl: qwenBaseUrl,
+    fallbackModel: c.get<string>("fallbackModel", "gemini-3.5-flash"),
+    fallbackApiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
   };
 }
