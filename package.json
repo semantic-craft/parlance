@@ -2,7 +2,7 @@
   "name": "parlance",
   "displayName": "Parlance",
   "description": "Find how scholars phrased it — semantic phrasing search over your Zotero full-text via zsearch.",
-  "version": "0.0.9",
+  "version": "0.0.11",
   "publisher": "semantic-craft",
   "license": "MIT",
   "repository": {
@@ -82,8 +82,8 @@
         },
         "parlance.suggestModel": {
           "type": "string",
-          "default": "gemini-3.5-flash",
-          "description": "生成改写建议的 Gemini 模型(默认 gemini-3.5-flash;繁忙/503 时可改 gemini-2.5-flash / gemini-2.5-pro)"
+          "default": "qwen3.6-flash",
+          "description": "生成改写建议的主模型。默认使用 Qwen Token Plan(qwen3.6-flash); 需要更强推理可改 qwen3.6-plus。Gemini 作为 fallbackModel。"
         },
         "parlance.suggestMaxPassages": {
           "type": "number",
@@ -92,13 +92,13 @@
         },
         "parlance.fallbackModel": {
           "type": "string",
-          "default": "qwen3.6-flash",
-          "description": "Gemini 不可用时回退的 Qwen Token Plan 模型(建议 qwen3.6-flash 或 qwen3.6-plus;需 Token Plan API key)"
+          "default": "gemini-3.5-flash",
+          "description": "Qwen 不可用时回退的 Gemini 模型。Gemini 排在国产模型之后。"
         },
         "parlance.fallbackBaseUrl": {
           "type": "string",
           "default": "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
-          "description": "Qwen 文本回退用的 Token Plan Anthropic Messages 端点。此扩展没有 TTS 功能，不使用 DashScope TTS 端点。"
+          "description": "Qwen Token Plan Anthropic Messages 端点。此扩展没有 TTS 功能，不使用 DashScope TTS 端点。"
         }
       }
     }

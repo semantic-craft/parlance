@@ -39,9 +39,10 @@ export interface SuggestConfig {
   model: string;
   maxPassages: number;
   apiKey: string | undefined;
+  baseUrl?: string;
   fallbackModel: string;
   fallbackApiKey: string | undefined;
-  fallbackBaseUrl: string;
+  fallbackBaseUrl?: string;
 }
 
 export interface GenRequest {
