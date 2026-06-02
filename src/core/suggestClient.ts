@@ -23,6 +23,7 @@ export const SYSTEM_INSTRUCTION = [
   "只能基于用户提供的句子和检索到的段落作答,不得发明法条号、出处、作者、年份、事实或段落中没有的内容。",
   "每条改写在 basis 注明依据的段落编号(如「段落2」)或出处;每条可借用措辞在 source 注明出处。",
   "若所给段落不足以支撑某改写,在 diagnosis 中诚实说明,而不是编造。",
+  "SkillOpt-style validation gate: final answer must pass grounding gate(每条 rewrite/phrasings 都能回指所给段落), insufficiency gate(材料不足时收窄或说明不足), no-invention gate(不新增段落外事实/出处/作者/年份), and schema gate(只输出合法 JSON 对象).",
   "用简体中文输出。只输出一个 JSON 对象,字段为:diagnosis(字符串)、rewrites(数组,每项 {text, basis})、phrasings(数组,每项 {text, source})。",
 ].join("\n");
 
