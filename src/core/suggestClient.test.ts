@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 
-import { buildPrompt, generateSuggestions, isTransientGeminiError, qwenGenerator, SuggestError, withRetry } from "./suggestClient";
+import { buildPrompt, generateSuggestions, isTransientGeminiError, qwenGenerator, SuggestError, SYSTEM_INSTRUCTION, withRetry } from "./suggestClient";
 import type { Generator, PhraseHit, Suggestion } from "./types";
 
 const HITS: PhraseHit[] = [
@@ -82,6 +82,14 @@ describe("buildPrompt", () => {
     const p = buildPrompt("s", long, 6);
     expect(p).toContain("…");
     expect(p).not.toContain("字".repeat(1000));
+  });
+});
+
+describe("SYSTEM_INSTRUCTION", () => {
+  it("keeps suggestions grounded with a SkillOpt-style validation gate", () => {
+    expect(SYSTEM_INSTRUCTION).toContain("SkillOpt-style validation gate");
+    expect(SYSTEM_INSTRUCTION).toContain("grounding gate");
+    expect(SYSTEM_INSTRUCTION).toContain("no-invention gate");
   });
 });
 
