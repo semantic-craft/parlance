@@ -28,7 +28,7 @@ This is a thin front-end over a local setup; it is most useful if you already ru
 | `parlance.topK` | `10` | Number of passages to retrieve |
 | `parlance.suggestModel` | `gemini-3.5-flash` | Primary Gemini model for suggestions |
 | `parlance.suggestMaxPassages` | `6` | Max retrieved passages fed to the model |
-| `parlance.fallbackModel` | `qwen3.6-flash` | Qwen Token Plan model used when Gemini fails; use `qwen3.6-plus` if you want the stronger option |
+| `parlance.fallbackModel` | `qwen3.6-flash` | Qwen Token Plan model used when Gemini fails; use `qwen3.7-plus` or `qwen3.7-max` if you want a stronger option |
 | `parlance.fallbackBaseUrl` | Aliyun Token Plan Anthropic endpoint | Anthropic-compatible base URL for the Qwen text fallback |
 
 ## Privacy & grounding
