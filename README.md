@@ -26,10 +26,10 @@ This is a thin front-end over a local setup; it is most useful if you already ru
 | --- | --- | --- |
 | `parlance.zsearchPath` | `zsearch` | Path to the `zsearch` executable |
 | `parlance.topK` | `10` | Number of passages to retrieve |
-| `parlance.suggestModel` | `gemini-3.5-flash` | Primary Gemini model for suggestions |
+| `parlance.suggestModel` | `qwen3.6-flash` | Primary Qwen Token Plan model for suggestions |
 | `parlance.suggestMaxPassages` | `6` | Max retrieved passages fed to the model |
-| `parlance.fallbackModel` | `qwen3.6-flash` | Qwen Token Plan model used when Gemini fails; use `qwen3.7-plus` or `qwen3.7-max` if you want a stronger option |
-| `parlance.fallbackBaseUrl` | Aliyun Token Plan Anthropic endpoint | Anthropic-compatible base URL for the Qwen text fallback |
+| `parlance.fallbackModel` | `gemini-3.5-flash` | Gemini model used when the primary Qwen model fails |
+| `parlance.fallbackBaseUrl` | Aliyun Token Plan Anthropic endpoint | Anthropic-compatible base URL for the primary Qwen model |
 
 ## Privacy & grounding
 

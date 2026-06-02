@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 
 import type { ParlanceApi } from "../../extension";
 
-const EXT_ID = "xwzhangSZU.parlance";
+const EXT_ID = "semantic-craft.parlance";
 const SAMPLE = "个人信息处理者负有合规义务";
 
 async function getApi(): Promise<ParlanceApi> {
