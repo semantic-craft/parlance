@@ -2,7 +2,7 @@
   "name": "parlance",
   "displayName": "Parlance",
   "description": "Find how scholars phrased it — semantic phrasing search over your Zotero full-text via zsearch.",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "publisher": "semantic-craft",
   "license": "MIT",
   "repository": {
@@ -88,7 +88,7 @@
         "parlance.suggestModel": {
           "type": "string",
           "default": "qwen3.6-flash",
-          "description": "生成改写建议的主模型。默认使用 Qwen Token Plan(qwen3.6-flash); 需要更强推理可改 qwen3.6-plus。Gemini 作为 fallbackModel。"
+          "description": "生成改写建议的主模型。默认使用 Qwen Token Plan(qwen3.6-flash); 需要更强推理可改 qwen3.7-plus 或 qwen3.7-max。Gemini 作为 fallbackModel。"
         },
         "parlance.suggestMaxPassages": {
           "type": "number",
