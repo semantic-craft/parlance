@@ -166,12 +166,12 @@ describe("generateSuggestions — Qwen fallback", () => {
     await generateSuggestions(
       "x",
       HITS,
-      { ...CFG, fallbackApiKey: "qkey", fallbackModel: "qwen3.6-plus", fallbackBaseUrl: "https://token-plan.example/v1" },
+      { ...CFG, fallbackApiKey: "qkey", fallbackModel: "qwen3.7-plus", fallbackBaseUrl: "https://token-plan.example/v1" },
       primary,
       fallback,
     );
     expect(seen?.apiKey).toBe("qkey");
-    expect(seen?.model).toBe("qwen3.6-plus");
+    expect(seen?.model).toBe("qwen3.7-plus");
     expect(seen?.baseUrl).toBe("https://token-plan.example/v1");
   });
 
