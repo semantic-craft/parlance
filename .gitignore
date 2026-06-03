@@ -4,3 +4,6 @@ out-test/
 coverage/
 *.vsix
 .vscode-test/
+
+# Internal agent/dev working notes — never publish.
+docs/superpowers/
