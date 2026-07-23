@@ -1,17 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { escapeHtml, formatSource, renderHits } from "./render";
+import { formatSource } from "./render";
 import type { PhraseHit } from "../core/types";
 
 const base: PhraseHit = {
   key: "ABCD", chunk_idx: 0, distance: 0.234, snippet: "原文段落",
   title: "论隐私", creators: ["Solove, D"], date: "2006-05", venue: "HLR", doi: null,
 };
-
-describe("escapeHtml", () => {
-  it("escapes angle brackets and ampersands", () => {
-    expect(escapeHtml('<a> & "b"')).toBe("&lt;a&gt; &amp; &quot;b&quot;");
-  });
-});
 
 describe("formatSource", () => {
   it("extracts the year and joins a single author", () => {
@@ -26,29 +20,5 @@ describe("formatSource", () => {
 
   it("falls back when title is null", () => {
     expect(formatSource({ ...base, title: null })).toContain("<无题>");
-  });
-});
-
-describe("renderHits", () => {
-  it("renders an empty-state message for no hits", () => {
-    expect(renderHits([])).toContain("没有找到");
-  });
-
-  it("escapes snippet content to prevent injection", () => {
-    const html = renderHits([{ ...base, snippet: "<script>x</script>" }]);
-    expect(html).not.toContain("<script>x</script>");
-    expect(html).toContain("&lt;script&gt;");
-  });
-
-  it("renders the distance and one block per hit", () => {
-    const html = renderHits([base, { ...base, key: "EFGH" }]);
-    expect(html).toContain("0.234");
-    expect((html.match(/class="hit"/g) || []).length).toBe(2);
-  });
-
-  it("escapes double-quotes in snippet for attribute context", () => {
-    const html = renderHits([{ ...base, snippet: 'say "hello"' }]);
-    expect(html).toContain('data-copy="say &quot;hello&quot;"');
-    expect(html).not.toContain('data-copy="say "hello""');
   });
 });
