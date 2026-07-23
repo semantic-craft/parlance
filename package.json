@@ -127,5 +127,8 @@
   },
   "dependencies": {
     "@google/genai": "^2.7.0"
+  },
+  "overrides": {
+    "serialize-javascript": "^7.0.7"
   }
 }
