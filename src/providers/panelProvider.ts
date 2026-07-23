@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import * as vscode from "vscode";
-import { renderHits } from "../webview/render";
-import { renderSuggestion } from "../webview/renderSuggestion";
+import { formatSource } from "../webview/render";
 import type { PhraseHit, Suggestion } from "../core/types";
 
 /**
@@ -77,7 +76,15 @@ export class PanelProvider implements vscode.WebviewViewProvider {
     this.lastQuery = { text, hits };
     this.lastSuggestionState = undefined;
     this.lastState = { kind: "results", count: hits.length };
-    this.post({ type: "results", html: renderHits(hits), count: hits.length });
+    this.post({
+      type: "results",
+      hits: hits.map((hit) => ({
+        key: hit.key,
+        distance: hit.distance,
+        snippet: hit.snippet,
+        source: formatSource(hit),
+      })),
+    });
   }
 
   showError(message: string): void {
@@ -91,8 +98,12 @@ export class PanelProvider implements vscode.WebviewViewProvider {
   }
 
   showSuggestions(s: Suggestion): void {
-    this.lastSuggestionState = { kind: "suggestions", count: s.rewrites.length, model: s.model };
-    this.post({ type: "suggestions", html: renderSuggestion(s) });
+    this.lastSuggestionState = {
+      kind: "suggestions",
+      count: s.rewrites.length,
+      model: s.model,
+    };
+    this.post({ type: "suggestions", suggestion: s });
   }
 
   showSuggestionError(message: string): void {
